@@ -87,10 +87,23 @@ function initSchema(db: Database.Database) {
 }
 
 function seedIfEmpty(db: Database.Database) {
+  // Always ensure the default admin account exists
+  const adminExists = (db.prepare("SELECT COUNT(*) as c FROM users WHERE username = 'admin'").get() as { c: number }).c;
+  if (adminExists === 0) {
+    const bcrypt = require('bcryptjs');
+    const hash = bcrypt.hashSync('admin123', 10);
+    db.prepare('INSERT OR IGNORE INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)').run('admin', 'admin@maimap.local', hash, 'admin');
+    console.log('[DB] Default admin created: admin / admin123');
+  }
+
+  // Seed locations from data/locations.json if the table is empty
   const count = (db.prepare('SELECT COUNT(*) as c FROM locations').get() as { c: number }).c;
   if (count > 0) return;
   const locationsPath = path.join(process.cwd(), 'data', 'locations.json');
-  if (!fs.existsSync(locationsPath)) return;
+  if (!fs.existsSync(locationsPath)) {
+    console.warn('[DB] data/locations.json not found — no locations seeded');
+    return;
+  }
   const locations = JSON.parse(fs.readFileSync(locationsPath, 'utf-8'));
   const insert = db.prepare('INSERT OR IGNORE INTO locations (id, name, address, lat, lng, country) VALUES (?, ?, ?, ?, ?, ?)');
   const insertMany = db.transaction((locs: typeof locations) => {
@@ -98,8 +111,4 @@ function seedIfEmpty(db: Database.Database) {
   });
   insertMany(locations);
   console.log(`[DB] Seeded ${locations.length} locations`);
-  const bcrypt = require('bcryptjs');
-  const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT OR IGNORE INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)').run('admin', 'admin@maimap.local', hash, 'admin');
-  console.log('[DB] Default admin: admin / admin123');
 }
