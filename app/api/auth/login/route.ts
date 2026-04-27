@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     if (!valid) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     const token = await signToken({ id: user.id, username: user.username, email: user.email, role: user.role, is_banned: user.is_banned });
     const response = NextResponse.json({ user: { id: user.id, username: user.username, email: user.email, role: user.role } });
-    response.cookies.set('maimap_token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 60 * 60 * 24 * 7, path: '/' });
+    response.cookies.set('maimap_token', token, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 60 * 60 * 24 * 7, path: '/' });
     return response;
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });
