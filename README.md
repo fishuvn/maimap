@@ -20,13 +20,14 @@ Find arcades, share tips, and connect with the community — across Vietnam, Aus
 ## ✨ Features
 
 ### For Players
-- 🗺️ **Interactive Map** — Leaflet-powered dark map with custom pins for all 79+ arcade locations
+- 🗺️ **Interactive Map** — Leaflet-powered dark map with custom pins for all 60+ arcade locations
 - 📋 **List View** — Browse locations grouped by country with search & filters
 - ✅ **Verified Badges** — Community-verified locations marked by moderators
 - 💬 **Community Posts** — Share tips, hours, and news for each location
 - 🧵 **Threaded Comments** — Reply to posts with nested comment support
 - 🚩 **Report System** — Flag inappropriate content for review
 - 🔐 **Authentication** — Register/login with secure JWT-based sessions
+- 👤 **Edit Profile** — Update username, email, bio, and password from the navbar dropdown
 
 ### For Moderators
 - 📥 **Content Queue** — Approve, hide, or delete pending posts and comments
@@ -35,6 +36,7 @@ Find arcades, share tips, and connect with the community — across Vietnam, Aus
 
 ### For Admins
 - 👥 **User Management** — Ban/unban users, assign roles (user / moderator / admin)
+- 🔒 **Self-protection** — Admins cannot ban or demote their own account
 - ⚙️ **Site Settings** — Toggle post/comment approval requirements, keyword filters
 
 ---
@@ -78,7 +80,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | Username | `admin` |
 | Password | `admin123` |
 
-> ⚠️ Change this password immediately in a production environment.
+> ⚠️ Change this password immediately via **Edit Profile** after first login.
 
 ---
 
@@ -86,7 +88,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 | Layer | Technology |
 |---|---|
-| **Framework** | [Next.js 16](https://nextjs.org/) (App Router) |
+| **Framework** | [Next.js 16](https://nextjs.org/) (App Router + Turbopack) |
 | **Language** | TypeScript 5 |
 | **Styling** | Tailwind CSS v4 + custom glassmorphism |
 | **Database** | SQLite via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) |
@@ -101,8 +103,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```
 maimap/
 ├── app/
-│   ├── api/                    # API routes (auth, locations, admin)
-│   │   ├── auth/               # register, login, logout, me
+│   ├── api/                    # API routes
+│   │   ├── auth/               # register, login, logout, me, profile
 │   │   ├── locations/          # list, detail, posts
 │   │   ├── posts/              # comments
 │   │   ├── reports/            # submit reports
@@ -120,15 +122,17 @@ maimap/
 │   ├── layout.tsx              # Root layout
 │   └── page.tsx                # Home page (map + list view)
 ├── components/
-│   ├── auth/                   # AuthProvider, AuthModal
+│   ├── auth/                   # AuthProvider, AuthModal, ProfileModal
 │   ├── layout/                 # Navbar
 │   ├── location/               # LocationCard
 │   └── map/                    # MapView (Leaflet)
+├── data/
+│   └── locations.json          # Seed data (60 locations, 12 countries)
 ├── lib/
 │   ├── db.ts                   # SQLite connection + schema + seeding
 │   ├── auth.ts                 # JWT sign/verify utilities
-│   └── utils.ts                # Formatting helpers, role badges
-├── middleware.ts               # Route protection for /admin/*
+│   └── utils.ts                # Formatting helpers, role badges, country flags
+├── proxy.ts                    # Route protection for /admin/* (Next.js 16)
 ├── next.config.ts
 ├── postcss.config.mjs
 └── package.json
@@ -142,6 +146,7 @@ maimap/
 |---|:---:|:---:|:---:|
 | View map & locations | ✅ | ✅ | ✅ |
 | Create posts & comments | ✅ | ✅ | ✅ |
+| Edit own profile | ✅ | ✅ | ✅ |
 | Report content | ✅ | ✅ | ✅ |
 | Approve / hide content | ❌ | ✅ | ✅ |
 | Manage reports | ❌ | ✅ | ✅ |
@@ -154,14 +159,46 @@ maimap/
 
 ## 🌍 Locations
 
-Currently seeded with **79 arcade locations** across:
+Currently seeded with **60 arcade locations** across 12 countries:
 
-| Country | Locations |
+| Country | Example Cities |
 |---|---|
-| 🇻🇳 Vietnam | Ho Chi Minh City, Hanoi, and more |
-| 🇦🇺 Australia | Melbourne, Adelaide, and more |
+| 🇻🇳 Vietnam | Ho Chi Minh City, Hanoi, Da Nang, Can Tho, Hai Phong, Binh Duong |
+| 🇦🇺 Australia | Melbourne, Sydney, Brisbane, Adelaide, Perth |
+| 🇯🇵 Japan | Tokyo (Shinjuku, Akihabara, Shibuya, Ikebukuro) |
+| 🇸🇬 Singapore | VivoCity, Jurong Point, Northpoint, Bugis+ |
+| 🇹🇼 Taiwan | New Taipei, Taipei |
+| 🇭🇰 Hong Kong | Kwun Tong, Kowloon Tong |
+| 🇲🇾 Malaysia | Subang Jaya, Kuala Lumpur |
+| 🇹🇭 Thailand | Bangkok |
+| 🇰🇷 South Korea | Seoul (Hongdae, Gangnam) |
+| 🇵🇭 Philippines | Metro Manila |
+| 🇮🇩 Indonesia | Jakarta |
 
-To add more locations, edit `data/locations.json` and re-seed, or use the Admin → Locations panel.
+To add more locations, edit `data/locations.json` and delete `maimap.db` to re-seed, or use the Admin → Locations panel.
+
+---
+
+## 🖥️ Self-Hosting on Proxmox LXC
+
+```bash
+# On Ubuntu 22.04 LXC
+
+# Install Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs git
+
+# Clone and install
+git clone https://github.com/fishuvn/maimap.git /opt/maimap
+cd /opt/maimap && npm install && npm run build
+
+# Start with PM2
+npm install -g pm2
+pm2 start npm --name "maimap" -- start
+pm2 startup && pm2 save
+```
+
+Pair with a **Cloudflare Zero Trust Tunnel** to expose your LXC to the internet with a custom domain — no open router ports needed.
 
 ---
 
