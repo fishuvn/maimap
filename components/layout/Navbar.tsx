@@ -47,7 +47,7 @@ export default function Navbar() {
                   <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 glass-strong rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-in">
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-in" style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.1)' }}>
                     {/* User info header */}
                     <div className="px-3 py-2.5 border-b border-white/5">
                       <p className="text-sm font-medium text-white">{user.username}</p>

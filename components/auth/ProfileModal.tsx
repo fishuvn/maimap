@@ -82,7 +82,7 @@ export default function ProfileModal({ open, onClose }: Props) {
 
       {/* Modal */}
       <div className="fixed inset-0 z-[61] flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-md glass-strong rounded-2xl shadow-2xl pointer-events-auto animate-fade-in">
+        <div className="w-full max-w-md rounded-2xl shadow-2xl pointer-events-auto animate-fade-in" style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.1)' }}>
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
