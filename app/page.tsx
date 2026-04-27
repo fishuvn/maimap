@@ -1,4 +1,5 @@
 'use client';
+import { Suspense } from 'react';
 import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import LocationCard from '@/components/location/LocationCard';
@@ -14,7 +15,7 @@ const MapView = dynamic(() => import('@/components/map/MapView'), {
 
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; post_count?: number; }
 
-export default function HomePage() {
+function HomeContent() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,5 +131,17 @@ export default function HomePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
