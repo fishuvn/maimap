@@ -32,7 +32,12 @@
 .glow-pink { box-shadow: 0 0 30px rgba(244, 114, 182, 0.15); }
 .glow-purple { box-shadow: 0 0 30px rgba(167, 139, 250, 0.15); }
 
-/* Leaflet overrides */
+/* Leaflet overrides — isolation: isolate traps Leaflet's internal z-indices
+   (400–600+) inside the map container so they never overlap the navbar/dropdowns */
+#maimap-leaflet {
+  isolation: isolate;
+}
+
 .leaflet-container {
   background: #0f0f1a !important;
   font-family: var(--font-inter) !important;
