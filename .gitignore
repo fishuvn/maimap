@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+
+# Database files
+maimap.db
+maimap.db-shm
+maimap.db-wal
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Next.js type generation (auto-regenerated)
+next-env.d.ts
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+dist/
+out/
+build/
+
+# TypeScript cache
+*.tsbuildinfo
