@@ -4,13 +4,15 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useState } from 'react';
 import { getRoleBadge } from '@/lib/utils';
 import AuthModal from '@/components/auth/AuthModal';
-import { MapPin, Shield, LogOut, Menu, X, ChevronDown } from 'lucide-react';
+import ProfileModal from '@/components/auth/ProfileModal';
+import { MapPin, Shield, LogOut, Menu, X, ChevronDown, UserCog } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const badge = user ? getRoleBadge(user.role) : null;
 
@@ -45,16 +47,27 @@ export default function Navbar() {
                   <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 glass-strong rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-in">
-                    <div className="px-3 py-2 border-b border-white/5">
+                  <div className="absolute right-0 top-full mt-2 w-52 glass-strong rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-in">
+                    {/* User info header */}
+                    <div className="px-3 py-2.5 border-b border-white/5">
                       <p className="text-sm font-medium text-white">{user.username}</p>
-                      <p className="text-xs text-zinc-500">{user.email}</p>
+                      <p className="text-xs text-zinc-500 truncate">{user.email}</p>
                     </div>
+                    {/* Edit Profile */}
+                    <button
+                      onClick={() => { setProfileOpen(true); setDropdownOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-white/5 transition-colors">
+                      <UserCog className="w-4 h-4 text-zinc-500" /> Edit Profile
+                    </button>
+                    {/* Admin panel link */}
                     {(user.role === 'moderator' || user.role === 'admin') && (
                       <Link href="/admin" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-violet-400 hover:bg-violet-500/10 transition-colors">
                         <Shield className="w-4 h-4" /> Admin Panel
                       </Link>
                     )}
+                    {/* Divider */}
+                    <div className="border-t border-white/5" />
+                    {/* Sign out */}
                     <button onClick={() => { logout(); setDropdownOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
                       <LogOut className="w-4 h-4" /> Sign Out
                     </button>
@@ -79,11 +92,17 @@ export default function Navbar() {
             {user && (user.role === 'moderator' || user.role === 'admin') && (
               <Link href="/admin" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg text-sm text-violet-400 hover:bg-violet-500/10">Admin Panel</Link>
             )}
+            {user && (
+              <button onClick={() => { setProfileOpen(true); setMenuOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-white/5">
+                Edit Profile
+              </button>
+            )}
           </div>
         )}
       </nav>
       {dropdownOpen && <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />}
       <AuthModal open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onSwitchMode={(m) => setAuthMode(m)} />
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </>
   );
 }
