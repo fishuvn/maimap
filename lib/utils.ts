@@ -29,7 +29,19 @@ export function getCountryFlag(country: string): string {
     Vietnam: '🇻🇳',
     Australia: '🇦🇺',
     Japan: '🇯🇵',
+    Singapore: '🇸🇬',
+    Taiwan: '🇹🇼',
+    'Hong Kong': '🇭🇰',
+    Malaysia: '🇲🇾',
+    Thailand: '🇹🇭',
+    'South Korea': '🇰🇷',
+    Philippines: '🇵🇭',
+    Indonesia: '🇮🇩',
     'United States': '🇺🇸',
+    'United Kingdom': '🇬🇧',
+    China: '🇨🇳',
+    France: '🇫🇷',
+    Germany: '🇩🇪',
   };
   return flags[country] || '🌍';
 }
@@ -37,7 +49,7 @@ export function getCountryFlag(country: string): string {
 export function getRoleBadge(role: string): { label: string; color: string } {
   switch (role) {
     case 'admin':
-      return { label: 'Admin', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
+      return { label: 'Admin', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
     case 'moderator':
       return { label: 'Mod', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
     default:
