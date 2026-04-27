@@ -52,8 +52,8 @@ export default function AdminSettingsPage() {
               ] as const).map(({ key, label, desc }) => (
                 <div key={key} className="flex items-center justify-between gap-4">
                   <div><p className="text-sm text-white">{label}</p><p className="text-xs text-zinc-500">{desc}</p></div>
-                  <button onClick={() => update(key, settings[key] === 'true' ? 'false' : 'true')} className={`relative w-11 h-6 rounded-full transition-colors ${settings[key] === 'true' ? 'bg-violet-600' : 'bg-zinc-700'}`}>
-                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${settings[key] === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <button type="button" onClick={() => update(key, settings[key] === 'true' ? 'false' : 'true')} className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors overflow-hidden ${settings[key] === 'true' ? 'bg-violet-600' : 'bg-zinc-700'}`}>
+                    <span className={`absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow transition-transform ${settings[key] === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
                 </div>
               ))}

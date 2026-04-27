@@ -37,7 +37,7 @@ export default function AdminUsersPage() {
         </div>
       </div>
       {loading ? <div className="flex items-center justify-center h-40"><Loader2 className="w-6 h-6 animate-spin text-violet-400" /></div> : (
-        <div className="glass rounded-xl overflow-hidden">
+        <div className="glass rounded-xl">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5 text-xs text-zinc-500 uppercase tracking-wider">
@@ -83,7 +83,7 @@ export default function AdminUsersPage() {
                               <Shield className="w-3 h-3" /> Role <ChevronDown className="w-3 h-3" />
                             </button>
                             {openRole === u.id && (
-                              <div className="absolute right-0 top-full mt-1 glass-strong rounded-lg shadow-xl z-20 py-1 min-w-[110px]">
+                              <div className="absolute right-0 top-full mt-1 glass-strong rounded-lg shadow-xl z-50 py-1 min-w-[110px]">
                                 {['user', 'moderator', 'admin'].map((r) => (
                                   <button key={r} onClick={() => actUser(u.id, 'setRole', r)} className={`w-full text-left px-3 py-1.5 text-xs capitalize hover:bg-white/5 ${u.role === r ? 'text-violet-400' : 'text-zinc-400'}`}>{r}</button>
                                 ))}
