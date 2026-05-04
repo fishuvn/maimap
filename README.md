@@ -32,7 +32,7 @@ Find arcades, share tips, and connect with the community — across Vietnam, Aus
 ### For Moderators
 - 📥 **Content Queue** — Approve, hide, or delete pending posts and comments
 - 🚩 **Report Queue** — Resolve or dismiss community reports
-- 📍 **Location Management** — Verify locations and edit details inline
+- 📍 **Location Management** — Verify locations, edit details, and **reposition map pins** via an interactive Google Maps picker
 
 ### For Admins
 - 👥 **User Management** — Ban/unban users, assign roles (user / moderator / admin)
@@ -93,7 +93,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | **Styling** | Tailwind CSS v4 + custom glassmorphism |
 | **Database** | SQLite via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) |
 | **Authentication** | JWT via [jose](https://github.com/panva/jose) + [bcryptjs](https://github.com/dcodeIO/bcrypt.js) |
-| **Map** | [Leaflet](https://leafletjs.com/) / [React-Leaflet](https://react-leaflet.js.org/) |
+| **Map** | [Google Maps](https://developers.google.com/maps) via [@vis.gl/react-google-maps](https://visgl.github.io/react-google-maps/) |
 | **Icons** | [Lucide React](https://lucide.dev/) |
 
 ---
@@ -204,12 +204,23 @@ Pair with a **Cloudflare Zero Trust Tunnel** to expose your LXC to the internet 
 
 ## ⚙️ Environment Variables
 
-Create a `.env.local` file to override defaults:
+Create a `.env.local` file:
 
 ```env
-# JWT signing secret (change this in production!)
+# JWT signing secret — change this in production!
 JWT_SECRET=your-super-secret-key-here
+
+# Google Maps API key (required for the map to work)
+# Get one at: https://console.cloud.google.com/google/maps-apis
+# Enable: Maps JavaScript API
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+
+# Optional: Google Maps Map ID (for custom dark styling)
+# Create one at: https://console.cloud.google.com/google/maps-apis/studio/maps
+NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=your-map-id
 ```
+
+> **Getting a Google Maps API key:** Go to [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Enable **Maps JavaScript API** → Credentials → Create API Key. Restrict it to your domain for production.
 
 ---
 
