@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useRef, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; }
@@ -49,6 +49,8 @@ function Markers({ locations, onSelect, selected }: Props) {
 }
 
 export default function MapView({ locations, onSelect, selected }: Props) {
+  const [mapError, setMapError] = useState<string | null>(null);
+
   if (!API_KEY) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-500 text-sm">
@@ -57,8 +59,18 @@ export default function MapView({ locations, onSelect, selected }: Props) {
     );
   }
 
+  if (mapError) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-zinc-500 text-sm gap-2">
+        <p className="text-zinc-400">Map unavailable</p>
+        <p className="text-xs text-zinc-600 max-w-xs text-center">{mapError}</p>
+        <p className="text-xs text-violet-400">Add <code>localhost</code> to your Google Cloud Console API key restrictions.</p>
+      </div>
+    );
+  }
+
   return (
-    <APIProvider apiKey={API_KEY}>
+    <APIProvider apiKey={API_KEY} onError={() => setMapError('API key is not authorized for this domain.')}>
       <Map
         mapId={DARK_STYLE_ID}
         defaultCenter={{ lat: 10.8, lng: 106.7 }}
