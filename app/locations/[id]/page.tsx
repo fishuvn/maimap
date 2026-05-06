@@ -1,14 +1,103 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { MapPin, CheckCircle, ArrowLeft, Plus, MessageSquare, Flag, ChevronDown, ChevronUp, Send, Loader2, AlertTriangle } from 'lucide-react';
+import { MapPin, CheckCircle, ArrowLeft, Plus, MessageSquare, Flag, ChevronDown, ChevronUp, Send, Loader2, AlertTriangle, Monitor, Star, Zap } from 'lucide-react';
 import { formatRelative, getCountryFlag, getRoleBadge } from '@/lib/utils';
 import Link from 'next/link';
 
-interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; verified_by_username?: string; }
+interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; verified_by_username?: string; cabinet_count?: number; }
 interface Post { id: number; title: string; body: string; username: string; role: string; created_at: string; comment_count: number; }
 interface Comment { id: number; body: string; username: string; role: string; created_at: string; replies: Comment[]; }
+interface Cabinet { id: number; location_id: string; number: number; token_cost: number; status: string; avg_rating: number | null; rating_count: number; }
+
+function StarRating({ cabinetId, initialRating, ratingCount, myScore, onRated, disabled }: {
+  cabinetId: number; initialRating: number | null; ratingCount: number; myScore: number | null;
+  onRated: (avg: number, count: number, my: number) => void; disabled: boolean;
+}) {
+  const [hover, setHover] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const active = hover || myScore || 0;
+
+  const rate = async (score: number) => {
+    if (disabled || loading) return;
+    setLoading(true);
+    const res = await fetch(`/api/cabinets/${cabinetId}/rate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ score }),
+    });
+    const data = await res.json();
+    if (res.ok) onRated(data.avg_rating, data.rating_count, data.my_score);
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button key={s} disabled={disabled || loading}
+          onMouseEnter={() => !disabled && setHover(s)}
+          onMouseLeave={() => setHover(0)}
+          onClick={() => rate(s)}
+          className={`transition-colors ${disabled ? 'cursor-default' : 'cursor-pointer'}`}>
+          <Star className={`w-3.5 h-3.5 transition-colors ${s <= active ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-600'}`} />
+        </button>
+      ))}
+      {initialRating ? (
+        <span className="text-xs text-zinc-400 ml-1">{initialRating.toFixed(1)} <span className="text-zinc-600">({ratingCount})</span></span>
+      ) : (
+        <span className="text-xs text-zinc-600 ml-1">No reviews</span>
+      )}
+    </div>
+  );
+}
+
+function CabinetCard({ cabinet, user, onUpdate }: { cabinet: Cabinet; user: any; onUpdate: (id: number, avg: number, count: number, my: number) => void; }) {
+  const [myScore, setMyScore] = useState<number | null>(null);
+  const [avg, setAvg] = useState<number | null>(cabinet.avg_rating);
+  const [count, setCount] = useState(cabinet.rating_count);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/cabinets/${cabinet.id}/rate`).then(r => r.json()).then(d => setMyScore(d.my_score));
+  }, [cabinet.id, user]);
+
+  const statusColor = cabinet.status === 'working' ? 'bg-green-500/15 text-green-400 border-green-500/30'
+    : cabinet.status === 'broken' ? 'bg-red-500/15 text-red-400 border-red-500/30'
+    : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30';
+
+  const handleRated = (newAvg: number, newCount: number, newMy: number) => {
+    setAvg(newAvg); setCount(newCount); setMyScore(newMy);
+    onUpdate(cabinet.id, newAvg, newCount, newMy);
+  };
+
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+      <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
+        <Monitor className="w-4 h-4 text-zinc-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-sm font-semibold text-zinc-100">Cab #{cabinet.number}</span>
+          <span className={`text-xs px-1.5 py-0.5 rounded-full border capitalize font-medium ${statusColor}`}>
+            {cabinet.status}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-0.5 text-xs text-zinc-500">
+            <Zap className="w-3 h-3" />{cabinet.token_cost} tokens
+          </span>
+          <StarRating
+            cabinetId={cabinet.id}
+            initialRating={avg}
+            ratingCount={count}
+            myScore={myScore}
+            onRated={handleRated}
+            disabled={!user || !!user.is_banned}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LocationPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +105,7 @@ export default function LocationPage() {
   const router = useRouter();
   const [location, setLocation] = useState<Location | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [cabinets, setCabinets] = useState<Cabinet[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPost, setExpandedPost] = useState<number | null>(null);
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
@@ -28,7 +118,15 @@ export default function LocationPage() {
   const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
-    fetch(`/api/locations/${id}`).then((r) => r.json()).then((d) => { setLocation(d.location); setPosts(d.posts || []); setLoading(false); });
+    Promise.all([
+      fetch(`/api/locations/${id}`).then(r => r.json()),
+      fetch(`/api/locations/${id}/cabinets`).then(r => r.json()),
+    ]).then(([locData, cabData]) => {
+      setLocation(locData.location);
+      setPosts(locData.posts || []);
+      setCabinets(cabData.cabinets || []);
+      setLoading(false);
+    });
   }, [id]);
 
   const loadComments = async (postId: number) => {
@@ -60,6 +158,10 @@ export default function LocationPage() {
     setToast('Report submitted. Thank you!'); setTimeout(() => setToast(''), 3000);
   };
 
+  const handleCabinetUpdate = (cabId: number, avg: number, count: number, _my: number) => {
+    setCabinets(prev => prev.map(c => c.id === cabId ? { ...c, avg_rating: avg, rating_count: count } : c));
+  };
+
   if (loading) return <div className="min-h-screen pt-16 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-400" /></div>;
   if (!location) return <div className="min-h-screen pt-16 flex items-center justify-center text-zinc-500">Location not found</div>;
 
@@ -70,7 +172,9 @@ export default function LocationPage() {
         <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to map
         </button>
-        <div className="glass rounded-2xl p-6 mb-6 relative overflow-hidden">
+
+        {/* Location header */}
+        <div className="glass rounded-2xl p-6 mb-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-2xl" />
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500/20 to-violet-500/20 flex items-center justify-center text-2xl border border-white/10">{getCountryFlag(location.country)}</div>
@@ -78,6 +182,11 @@ export default function LocationPage() {
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h1 className="text-xl font-bold text-white">{location.name}</h1>
                 {location.is_verified === 1 && <span className="flex items-center gap-1 text-xs bg-violet-500/20 text-violet-300 border border-violet-500/30 rounded-full px-2 py-0.5"><CheckCircle className="w-3 h-3" /> Verified</span>}
+                {cabinets.length > 0 && (
+                  <span className="flex items-center gap-1 text-xs bg-zinc-800 text-zinc-400 border border-white/8 rounded-full px-2 py-0.5">
+                    <Monitor className="w-3 h-3" /> {cabinets.length} cabinet{cabinets.length !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
               <div className="flex items-start gap-1 text-sm text-zinc-400 mb-2"><MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-zinc-600" />{location.address}</div>
               <div className="flex items-center gap-3 text-xs text-zinc-600">
@@ -89,15 +198,40 @@ export default function LocationPage() {
           </div>
         </div>
 
+        {/* Cabinets */}
+        {cabinets.length > 0 && (
+          <div className="glass rounded-2xl p-5 mb-4">
+            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Monitor className="w-4 h-4" /> Cabinets
+              {!user && <span className="text-xs text-zinc-600 font-normal normal-case ml-1">— log in to rate</span>}
+            </h2>
+            <div className="space-y-2">
+              {cabinets.map(cab => (
+                <CabinetCard key={cab.id} cabinet={cab} user={user} onUpdate={handleCabinetUpdate} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Community posts */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-zinc-300 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-zinc-500" />Community Posts<span className="text-xs text-zinc-600 font-normal">({posts.length})</span></h2>
-            {user && !user.is_banned && <button onClick={() => setShowPostForm(!showPostForm)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gradient-to-r from-pink-500 to-violet-600 text-white rounded-lg hover:opacity-90"><Plus className="w-3.5 h-3.5" /> New Post</button>}
+            <h2 className="text-base font-semibold text-zinc-300 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-zinc-500" />Community Posts
+              <span className="text-xs text-zinc-600 font-normal">({posts.length})</span>
+            </h2>
+            {user && !user.is_banned && (
+              <button onClick={() => setShowPostForm(!showPostForm)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gradient-to-r from-pink-500 to-violet-600 text-white rounded-lg hover:opacity-90">
+                <Plus className="w-3.5 h-3.5" /> New Post
+              </button>
+            )}
           </div>
           {showPostForm && (
             <div className="glass rounded-xl p-4 space-y-3 animate-fade-in">
-              <input type="text" placeholder="Post title..." value={postTitle} onChange={(e) => setPostTitle(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/40" />
-              <textarea placeholder="Share information about this location..." value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/40 resize-none" />
+              <input type="text" placeholder="Post title..." value={postTitle} onChange={(e) => setPostTitle(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" />
+              <textarea placeholder="Share information about this location..." value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={4}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 resize-none" />
               <div className="flex justify-end gap-2">
                 <button onClick={() => setShowPostForm(false)} className="px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-300">Cancel</button>
                 <button onClick={submitPost} disabled={submitting} className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-500 disabled:opacity-50">
@@ -148,9 +282,10 @@ export default function LocationPage() {
       {reportTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setReportTarget(null)} />
-          <div className="relative glass-strong rounded-2xl p-6 w-full max-w-sm animate-fade-in">
+          <div className="relative rounded-2xl p-6 w-full max-w-sm animate-fade-in" style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center gap-2 mb-4"><AlertTriangle className="w-5 h-5 text-red-400" /><h3 className="text-base font-semibold text-white">Report Content</h3></div>
-            <textarea placeholder="Reason for reporting..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} rows={3} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500/40 resize-none mb-4" />
+            <textarea placeholder="Reason for reporting..." value={reportReason} onChange={(e) => setReportReason(e.target.value)} rows={3}
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500 resize-none mb-4" />
             <div className="flex justify-end gap-2">
               <button onClick={() => { setReportTarget(null); setReportReason(''); }} className="px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-300">Cancel</button>
               <button onClick={submitReport} disabled={submitting} className="px-4 py-1.5 text-sm bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30">Submit Report</button>
@@ -171,7 +306,7 @@ function CommentItem({ comment, postId, locationId, user, onReport }: { comment:
       <div className="flex-1">
         <div className="flex items-center gap-1.5 mb-0.5">
           <span className="text-xs font-medium text-zinc-300">{comment.username}</span>
-          {comment.role !== 'user' && <span className={`text-xs px-1 py-0.5 rounded-full border ${badge.color}`} style={{fontSize:'9px'}}>{badge.label}</span>}
+          {comment.role !== 'user' && <span className={`text-xs px-1 py-0.5 rounded-full border ${badge.color}`} style={{ fontSize: '9px' }}>{badge.label}</span>}
           <span className="text-xs text-zinc-700">{formatRelative(comment.created_at)}</span>
           {user && <button onClick={() => onReport(comment.id)} className="ml-auto text-zinc-700 hover:text-red-400"><Flag className="w-3 h-3" /></button>}
         </div>
@@ -198,7 +333,7 @@ function CommentForm({ postId, locationId, parentId, onSubmit, small }: { postId
   return (
     <div className={`flex gap-2 ${small ? 'mt-1' : 'mt-3'}`}>
       <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={parentId ? 'Write a reply...' : 'Add a comment...'} rows={small ? 1 : 2}
-        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/40 resize-none" />
+        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 resize-none" />
       <button onClick={submit} disabled={loading || !body.trim()} className="self-end p-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 disabled:opacity-40">
         {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
       </button>

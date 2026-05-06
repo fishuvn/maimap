@@ -5,7 +5,9 @@ import { getSessionFromRequest } from '@/lib/auth';
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = getDb();
-  const location = db.prepare(`SELECT l.*, u.username as verified_by_username FROM locations l LEFT JOIN users u ON l.verified_by = u.id WHERE l.id = ?`).get(id) as any;
+  const location = db.prepare(`SELECT l.*, u.username as verified_by_username,
+    (SELECT COUNT(*) FROM cabinets c WHERE c.location_id = l.id) as cabinet_count
+    FROM locations l LEFT JOIN users u ON l.verified_by = u.id WHERE l.id = ?`).get(id) as any;
   if (!location) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const posts = db.prepare(`SELECT p.*, u.username, u.role, u.avatar_url, (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.status = 'approved') as comment_count FROM posts p JOIN users u ON p.user_id = u.id WHERE p.location_id = ? AND p.status = 'approved' ORDER BY p.created_at DESC`).all(id);
   return NextResponse.json({ location, posts });

@@ -57,8 +57,25 @@ function initSchema(db: Database.Database) {
       parent_id INTEGER REFERENCES comments(id),
       user_id INTEGER NOT NULL REFERENCES users(id),
       body TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending',
+      status TEXT NOT NULL DEFAULT 'approved',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS cabinets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      location_id TEXT NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+      number INTEGER NOT NULL,
+      token_cost INTEGER NOT NULL DEFAULT 7,
+      status TEXT NOT NULL DEFAULT 'unknown',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(location_id, number)
+    );
+    CREATE TABLE IF NOT EXISTS cabinet_ratings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cabinet_id INTEGER NOT NULL REFERENCES cabinets(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      score INTEGER NOT NULL CHECK(score >= 1 AND score <= 5),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(cabinet_id, user_id)
     );
     CREATE TABLE IF NOT EXISTS reports (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,7 +97,7 @@ function initSchema(db: Database.Database) {
       ('site_description', 'Find maimai DX arcades near you'),
       ('allow_registration', 'true'),
       ('require_post_approval', 'true'),
-      ('require_comment_approval', 'true'),
+      ('require_comment_approval', 'false'),
       ('prohibited_keywords', ''),
       ('primary_categories', 'General,Cabinet Status,New Location,Event');
   `);
