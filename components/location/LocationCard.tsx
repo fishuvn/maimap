@@ -1,25 +1,22 @@
 'use client';
 import Link from 'next/link';
 import { CheckCircle, MessageSquare, ExternalLink } from 'lucide-react';
-import { getFlagUrl, getCountryFlag } from '@/lib/utils';
+import { getCountryCode } from '@/lib/utils';
 
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; post_count?: number; }
 interface Props { location: Location; onClick?: () => void; selected?: boolean; }
 
 function CountryFlag({ country, size = 'sm' }: { country: string; size?: 'sm' | 'lg' }) {
-  const url = getFlagUrl(country, size === 'lg' ? '40x30' : '20x15');
-  const emoji = getCountryFlag(country);
-  const dim = size === 'lg' ? { w: 40, h: 30 } : { w: 20, h: 15 };
-  if (!url) return <span className="text-base">{emoji}</span>;
+  const code = getCountryCode(country);
+  if (!code) return <span className="text-base">🌍</span>;
   return (
-    <img
-      src={url}
-      alt={country}
-      width={dim.w}
-      height={dim.h}
-      className={`rounded-sm object-cover ${size === 'lg' ? 'w-10 h-7' : 'w-5 h-3.5'}`}
-      style={{ imageRendering: 'auto' }}
-      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+    <span
+      className={`fi fi-${code} rounded-sm flex-shrink-0`}
+      style={size === 'lg'
+        ? { width: '36px', height: '27px', display: 'inline-block', backgroundSize: 'cover' }
+        : { width: '20px', height: '15px', display: 'inline-block', backgroundSize: 'cover' }
+      }
+      title={country}
     />
   );
 }
