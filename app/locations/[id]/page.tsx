@@ -73,6 +73,10 @@ function CabinetCard({ cabinet, user, onUpdate }: { cabinet: Cabinet; user: any;
     : cabinet.payment_type === 'both' ? 'text-blue-400'
     : 'text-purple-400';
 
+  const costUnit = cabinet.payment_type === 'coins' ? 'coins'
+    : cabinet.payment_type === 'both' ? 'coins/credits'
+    : 'credits';
+
   const handleRated = (newAvg: number, newCount: number, newMy: number) => {
     setAvg(newAvg); setCount(newCount); setMyScore(newMy);
     onUpdate(cabinet.id, newAvg, newCount, newMy);
@@ -92,7 +96,7 @@ function CabinetCard({ cabinet, user, onUpdate }: { cabinet: Cabinet; user: any;
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-xs font-medium ${paymentColor}`}>{paymentLabel}</span>
-          <span className="text-xs text-zinc-600">· {cabinet.cost} credits</span>
+          <span className="text-xs text-zinc-600">· {cabinet.cost} {costUnit}</span>
           <StarRating
             cabinetId={cabinet.id}
             initialRating={avg}
