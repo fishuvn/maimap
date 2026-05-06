@@ -68,6 +68,7 @@ function initSchema(db: Database.Database) {
       payment_type TEXT NOT NULL DEFAULT 'card',
       cost INTEGER NOT NULL DEFAULT 7,
       status TEXT NOT NULL DEFAULT 'unknown',
+      status_note TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(location_id, number)
     );

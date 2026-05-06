@@ -10,7 +10,7 @@ import Link from 'next/link';
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; verified_by_username?: string; cabinet_count?: number; }
 interface Post { id: number; title: string; body: string; username: string; role: string; created_at: string; comment_count: number; }
 interface Comment { id: number; body: string; username: string; role: string; created_at: string; replies: Comment[]; }
-interface Cabinet { id: number; location_id: string; number: number; payment_type: string; cost: number; status: string; avg_rating: number | null; rating_count: number; }
+interface Cabinet { id: number; location_id: string; number: number; payment_type: string; cost: number; status: string; status_note: string | null; avg_rating: number | null; rating_count: number; }
 
 function StarRating({ cabinetId, initialRating, ratingCount, myScore, onRated, disabled }: {
   cabinetId: number; initialRating: number | null; ratingCount: number; myScore: number | null;
@@ -102,6 +102,12 @@ function CabinetCard({ cabinet, user, onUpdate }: { cabinet: Cabinet; user: any;
             disabled={!user || !!user.is_banned}
           />
         </div>
+        {cabinet.status_note && cabinet.status !== 'working' && (
+          <div className="mt-2 flex items-start gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
+            <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-zinc-400">{cabinet.status_note}</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Search, Loader2, Edit3, Check, X, MapPin, Monitor, Plus, Trash2, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Loader2, Edit3, Check, X, MapPin, Monitor, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { getCountryFlag } from '@/lib/utils';
 import PinPickerModal from '@/components/map/PinPickerModal';
 
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; }
-interface Cabinet { id: number; number: number; payment_type: string; cost: number; status: string; avg_rating: number | null; rating_count: number; }
+interface Cabinet { id: number; number: number; payment_type: string; cost: number; status: string; status_note: string | null; avg_rating: number | null; rating_count: number; }
 
 export default function AdminLocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -20,6 +20,9 @@ export default function AdminLocationsPage() {
   const [loadingCabs, setLoadingCabs] = useState<string | null>(null);
   const [newCab, setNewCab] = useState<{ number: string; token_cost: string; payment_type: string; status: string }>({ number: '', token_cost: '7', payment_type: 'card', status: 'unknown' });
   const [addingCab, setAddingCab] = useState(false);
+  const [editingCab, setEditingCab] = useState<number | null>(null);
+  const [editCabData, setEditCabData] = useState<{ status: string; status_note: string; payment_type: string; cost: string }>({ status: 'unknown', status_note: '', payment_type: 'card', cost: '7' });
+  const [savingCab, setSavingCab] = useState(false);
 
   useEffect(() => {
     fetch('/api/locations').then((r) => r.json()).then((d) => { setLocations(d.locations || []); setLoading(false); });
@@ -72,6 +75,25 @@ export default function AdminLocationsPage() {
   const deleteCabinet = async (locId: string, cabId: number) => {
     await fetch(`/api/cabinets/${cabId}`, { method: 'DELETE' });
     setCabinets(prev => ({ ...prev, [locId]: prev[locId].filter(c => c.id !== cabId) }));
+  };
+
+  const startEditCab = (cab: Cabinet) => {
+    setEditingCab(cab.id);
+    setEditCabData({ status: cab.status, status_note: cab.status_note || '', payment_type: cab.payment_type, cost: String(cab.cost) });
+  };
+
+  const saveEditCab = async (locId: string, cabId: number) => {
+    setSavingCab(true);
+    const res = await fetch(`/api/cabinets/${cabId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: editCabData.status, status_note: editCabData.status_note || null, payment_type: editCabData.payment_type, cost: parseInt(editCabData.cost) }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setCabinets(prev => ({ ...prev, [locId]: prev[locId].map(c => c.id === cabId ? { ...c, ...data.cabinet } : c) }));
+      setEditingCab(null);
+    }
+    setSavingCab(false);
   };
 
   const filtered = locations.filter((l) => l.name.toLowerCase().includes(search.toLowerCase()) || l.address.toLowerCase().includes(search.toLowerCase()));
@@ -173,18 +195,69 @@ export default function AdminLocationsPage() {
                       {(cabinets[loc.id] || []).map(cab => {
                         const sc = cab.status === 'working' ? 'text-green-400' : cab.status === 'broken' ? 'text-red-400' : 'text-zinc-500';
                         return (
-                          <div key={cab.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02] border border-white/5">
-                            <Monitor className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
-                            <span className="text-xs text-zinc-300 font-medium">Cab #{cab.number}</span>
-                            <span className={`text-xs capitalize ${sc}`}>{cab.status}</span>
-                            <span className="text-xs text-zinc-500">
-                              {cab.payment_type === 'coins' ? '🪙' : cab.payment_type === 'both' ? '🪙+💳' : '💳'} {cab.cost}
-                            </span>
-                            <div className="flex-1" />
-                            <button onClick={() => deleteCabinet(loc.id, cab.id)} className="p-1 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
+                          {editingCab === cab.id ? (
+                            /* ── Inline edit mode ── */
+                            <div key={cab.id} className="space-y-2 px-2 py-2 rounded-lg bg-violet-500/5 border border-violet-500/20">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <Monitor className="w-3.5 h-3.5 text-violet-400" />
+                                <span className="text-xs font-medium text-violet-300">Edit Cab #{cab.number}</span>
+                              </div>
+                              <div className="flex gap-2 flex-wrap">
+                                <select value={editCabData.status} onChange={e => setEditCabData(p => ({ ...p, status: e.target.value }))}
+                                  className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500">
+                                  <option value="working">✅ Working</option>
+                                  <option value="unknown">❓ Unknown</option>
+                                  <option value="broken">❌ Broken</option>
+                                </select>
+                                <select value={editCabData.payment_type} onChange={e => setEditCabData(p => ({ ...p, payment_type: e.target.value }))}
+                                  className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500">
+                                  <option value="card">💳 Card</option>
+                                  <option value="coins">🪙 Coins</option>
+                                  <option value="both">🪙+💳 Both</option>
+                                </select>
+                                <input type="number" value={editCabData.cost} onChange={e => setEditCabData(p => ({ ...p, cost: e.target.value }))} min={1}
+                                  className="w-16 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500" placeholder="Cost" />
+                              </div>
+                              <input
+                                value={editCabData.status_note}
+                                onChange={e => setEditCabData(p => ({ ...p, status_note: e.target.value }))}
+                                placeholder={editCabData.status === 'broken' ? 'Reason it\'s broken (e.g. card reader faulty)' : 'Optional note...'}
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500"
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <button onClick={() => setEditingCab(null)} className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300">Cancel</button>
+                                <button onClick={() => saveEditCab(loc.id, cab.id)} disabled={savingCab}
+                                  className="flex items-center gap-1 px-2.5 py-1 text-xs bg-violet-500/20 text-violet-400 border border-violet-500/30 rounded-lg hover:bg-violet-500/30 disabled:opacity-50">
+                                  {savingCab ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* ── View mode ── */
+                            <div key={cab.id} className="rounded-lg bg-white/[0.02] border border-white/5 overflow-hidden">
+                              <div className="flex items-center gap-2 px-2 py-1.5">
+                                <Monitor className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
+                                <span className="text-xs text-zinc-300 font-medium">Cab #{cab.number}</span>
+                                <span className={`text-xs capitalize ${sc}`}>{cab.status}</span>
+                                <span className="text-xs text-zinc-500">
+                                  {cab.payment_type === 'coins' ? '🪙' : cab.payment_type === 'both' ? '🪙+💳' : '💳'} {cab.cost}
+                                </span>
+                                <div className="flex-1" />
+                                <button onClick={() => startEditCab(cab)} className="p-1 rounded hover:bg-violet-500/10 text-zinc-600 hover:text-violet-400 transition-colors" title="Edit cabinet">
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                                <button onClick={() => deleteCabinet(loc.id, cab.id)} className="p-1 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors">
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                              {cab.status_note && (
+                                <div className="px-2 pb-1.5 flex items-start gap-1.5">
+                                  <AlertCircle className="w-3 h-3 text-amber-400 flex-shrink-0 mt-0.5" />
+                                  <p className="text-xs text-zinc-500 italic">{cab.status_note}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         );
                       })}
                       {/* Add new cabinet */}
