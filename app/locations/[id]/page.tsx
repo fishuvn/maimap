@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { MapPin, CheckCircle, ArrowLeft, Plus, MessageSquare, Flag, ChevronDown, ChevronUp, Send, Loader2, AlertTriangle, Monitor, Star, Zap } from 'lucide-react';
 import { formatRelative, getCountryFlag, getRoleBadge } from '@/lib/utils';
+import { CountryFlag } from '@/components/location/LocationCard';
 import Link from 'next/link';
 
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; verified_by_username?: string; cabinet_count?: number; }
@@ -184,7 +185,9 @@ export default function LocationPage() {
         <div className="glass rounded-2xl p-6 mb-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-2xl" />
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500/20 to-violet-500/20 flex items-center justify-center text-2xl border border-white/10">{getCountryFlag(location.country)}</div>
+            <div className="w-12 h-12 rounded-xl bg-zinc-800/80 flex items-center justify-center overflow-hidden border border-white/10">
+              <CountryFlag country={location.country} size="lg" />
+            </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h1 className="text-xl font-bold text-white">{location.name}</h1>

@@ -21,8 +21,13 @@ export default function Navbar() {
       <nav className="fixed top-0 left-0 right-0 z-50 h-16 glass border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <MapPin className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg">
+              <img src="/icon.png" alt="MaiMap" className="w-full h-full object-cover" onError={(e) => {
+                const el = e.currentTarget;
+                el.style.display = 'none';
+                (el.parentElement as HTMLDivElement).style.background = 'linear-gradient(135deg, #ec4899, #7c3aed)';
+                (el.parentElement as HTMLDivElement).innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white m-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+              }} />
             </div>
             <span className="font-bold text-lg gradient-text hidden sm:block">MaiMap</span>
           </Link>

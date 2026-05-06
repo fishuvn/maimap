@@ -24,24 +24,51 @@ export function formatRelative(dateStr: string): string {
   return formatDate(dateStr);
 }
 
+// Maps country full name OR 2-letter code → ISO 2-letter code for flagcdn.com
+export function getCountryCode(country: string): string {
+  const map: Record<string, string> = {
+    // Full names
+    Vietnam: 'vn', Australia: 'au', Japan: 'jp', Singapore: 'sg',
+    Taiwan: 'tw', 'Hong Kong': 'hk', Malaysia: 'my', Thailand: 'th',
+    'South Korea': 'kr', Philippines: 'ph', Indonesia: 'id',
+    'United States': 'us', 'United Kingdom': 'gb',
+    China: 'cn', France: 'fr', Germany: 'de', Canada: 'ca',
+    'New Zealand': 'nz', India: 'in', Brazil: 'br',
+    // Already 2-letter codes
+    VN: 'vn', AU: 'au', JP: 'jp', SG: 'sg', TW: 'tw',
+    HK: 'hk', MY: 'my', TH: 'th', KR: 'kr', PH: 'ph',
+    ID: 'id', US: 'us', GB: 'gb', UK: 'gb', CN: 'cn',
+    FR: 'fr', DE: 'de', CA: 'ca', NZ: 'nz', IN: 'in', BR: 'br',
+  };
+  return map[country] || '';
+}
+
+export function getFlagUrl(country: string, size: '20x15' | '40x30' = '20x15'): string {
+  const code = getCountryCode(country);
+  if (!code) return '';
+  return `https://flagcdn.com/${size}/${code}.png`;
+}
+
 export function getCountryFlag(country: string): string {
   const flags: Record<string, string> = {
-    Vietnam: '🇻🇳',
-    Australia: '🇦🇺',
-    Japan: '🇯🇵',
-    Singapore: '🇸🇬',
-    Taiwan: '🇹🇼',
-    'Hong Kong': '🇭🇰',
-    Malaysia: '🇲🇾',
-    Thailand: '🇹🇭',
-    'South Korea': '🇰🇷',
-    Philippines: '🇵🇭',
-    Indonesia: '🇮🇩',
-    'United States': '🇺🇸',
-    'United Kingdom': '🇬🇧',
-    China: '🇨🇳',
-    France: '🇫🇷',
-    Germany: '🇩🇪',
+    Vietnam: '🇻🇳', VN: '🇻🇳',
+    Australia: '🇦🇺', AU: '🇦🇺',
+    Japan: '🇯🇵', JP: '🇯🇵',
+    Singapore: '🇸🇬', SG: '🇸🇬',
+    Taiwan: '🇹🇼', TW: '🇹🇼',
+    'Hong Kong': '🇭🇰', HK: '🇭🇰',
+    Malaysia: '🇲🇾', MY: '🇲🇾',
+    Thailand: '🇹🇭', TH: '🇹🇭',
+    'South Korea': '🇰🇷', KR: '🇰🇷',
+    Philippines: '🇵🇭', PH: '🇵🇭',
+    Indonesia: '🇮🇩', ID: '🇮🇩',
+    'United States': '🇺🇸', US: '🇺🇸',
+    'United Kingdom': '🇬🇧', GB: '🇬🇧', UK: '🇬🇧',
+    China: '🇨🇳', CN: '🇨🇳',
+    France: '🇫🇷', FR: '🇫🇷',
+    Germany: '🇩🇪', DE: '🇩🇪',
+    Canada: '🇨🇦', CA: '🇨🇦',
+    'New Zealand': '🇳🇿', NZ: '🇳🇿',
   };
   return flags[country] || '🌍';
 }
