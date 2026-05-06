@@ -5,7 +5,7 @@ import { getCountryFlag } from '@/lib/utils';
 import PinPickerModal from '@/components/map/PinPickerModal';
 
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; }
-interface Cabinet { id: number; number: number; token_cost: number; status: string; avg_rating: number | null; rating_count: number; }
+interface Cabinet { id: number; number: number; payment_type: string; cost: number; status: string; avg_rating: number | null; rating_count: number; }
 
 export default function AdminLocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -18,7 +18,7 @@ export default function AdminLocationsPage() {
   const [expandedCabs, setExpandedCabs] = useState<string | null>(null);
   const [cabinets, setCabinets] = useState<Record<string, Cabinet[]>>({});
   const [loadingCabs, setLoadingCabs] = useState<string | null>(null);
-  const [newCab, setNewCab] = useState<{ number: string; token_cost: string; status: string }>({ number: '', token_cost: '7', status: 'unknown' });
+  const [newCab, setNewCab] = useState<{ number: string; token_cost: string; payment_type: string; status: string }>({ number: '', token_cost: '7', payment_type: 'card', status: 'unknown' });
   const [addingCab, setAddingCab] = useState(false);
 
   useEffect(() => {
@@ -59,12 +59,12 @@ export default function AdminLocationsPage() {
     setAddingCab(true);
     const res = await fetch(`/api/locations/${locId}/cabinets`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: parseInt(newCab.number), token_cost: parseInt(newCab.token_cost), status: newCab.status }),
+      body: JSON.stringify({ number: parseInt(newCab.number), payment_type: newCab.payment_type, cost: parseInt(newCab.token_cost), status: newCab.status }),
     });
     const data = await res.json();
     if (res.ok) {
       setCabinets(prev => ({ ...prev, [locId]: [...(prev[locId] || []), data.cabinet].sort((a, b) => a.number - b.number) }));
-      setNewCab({ number: '', token_cost: '7', status: 'unknown' });
+      setNewCab({ number: '', token_cost: '7', payment_type: 'card', status: 'unknown' });
     }
     setAddingCab(false);
   };
@@ -177,7 +177,9 @@ export default function AdminLocationsPage() {
                             <Monitor className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
                             <span className="text-xs text-zinc-300 font-medium">Cab #{cab.number}</span>
                             <span className={`text-xs capitalize ${sc}`}>{cab.status}</span>
-                            <span className="flex items-center gap-0.5 text-xs text-zinc-600"><Zap className="w-3 h-3" />{cab.token_cost}</span>
+                            <span className="text-xs text-zinc-500">
+                              {cab.payment_type === 'coins' ? '🪙' : cab.payment_type === 'both' ? '🪙+💳' : '💳'} {cab.cost}
+                            </span>
                             <div className="flex-1" />
                             <button onClick={() => deleteCabinet(loc.id, cab.id)} className="p-1 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors">
                               <Trash2 className="w-3 h-3" />
@@ -186,11 +188,17 @@ export default function AdminLocationsPage() {
                         );
                       })}
                       {/* Add new cabinet */}
-                      <div className="flex items-center gap-2 pt-1">
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
                         <input type="number" placeholder="Cab #" value={newCab.number} onChange={e => setNewCab(p => ({ ...p, number: e.target.value }))} min={1}
                           className="w-16 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500" />
-                        <input type="number" placeholder="Tokens" value={newCab.token_cost} onChange={e => setNewCab(p => ({ ...p, token_cost: e.target.value }))} min={1}
-                          className="w-20 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500" />
+                        <select value={newCab.payment_type} onChange={e => setNewCab(p => ({ ...p, payment_type: e.target.value }))}
+                          className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500">
+                          <option value="card">💳 Card</option>
+                          <option value="coins">🪙 Coins</option>
+                          <option value="both">🪙+💳 Both</option>
+                        </select>
+                        <input type="number" placeholder="Cost" value={newCab.token_cost} onChange={e => setNewCab(p => ({ ...p, token_cost: e.target.value }))} min={1}
+                          className="w-16 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500" />
                         <select value={newCab.status} onChange={e => setNewCab(p => ({ ...p, status: e.target.value }))}
                           className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-violet-500">
                           <option value="unknown">Unknown</option>

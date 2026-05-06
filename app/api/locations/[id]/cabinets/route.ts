@@ -23,13 +23,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const session = await getSessionFromRequest(req);
   if (!session || (session.role !== 'moderator' && session.role !== 'admin'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  const { number, token_cost, status } = await req.json();
+  const { number, payment_type, cost, status } = await req.json();
   if (!number) return NextResponse.json({ error: 'Cabinet number required' }, { status: 400 });
   const db = getDb();
   try {
     const result = db.prepare(
-      'INSERT INTO cabinets (location_id, number, token_cost, status) VALUES (?, ?, ?, ?)'
-    ).run(id, number, token_cost ?? 7, status ?? 'unknown');
+      'INSERT INTO cabinets (location_id, number, payment_type, cost, status) VALUES (?, ?, ?, ?, ?)'
+    ).run(id, number, payment_type ?? 'card', cost ?? 7, status ?? 'unknown');
     const cabinet = db.prepare('SELECT * FROM cabinets WHERE id = ?').get(result.lastInsertRowid);
     return NextResponse.json({ cabinet });
   } catch (e: any) {

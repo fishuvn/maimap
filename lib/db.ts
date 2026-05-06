@@ -55,7 +55,8 @@ function initSchema(db: Database.Database) {
       location_id TEXT REFERENCES locations(id),
       post_id INTEGER REFERENCES posts(id),
       parent_id INTEGER REFERENCES comments(id),
-      user_id INTEGER NOT NULL REFERENCES users(id),
+      user_id INTEGER REFERENCES users(id),
+      guest_name TEXT,
       body TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'approved',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -64,7 +65,8 @@ function initSchema(db: Database.Database) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       location_id TEXT NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
       number INTEGER NOT NULL,
-      token_cost INTEGER NOT NULL DEFAULT 7,
+      payment_type TEXT NOT NULL DEFAULT 'card',
+      cost INTEGER NOT NULL DEFAULT 7,
       status TEXT NOT NULL DEFAULT 'unknown',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(location_id, number)

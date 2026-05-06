@@ -9,7 +9,7 @@ import Link from 'next/link';
 interface Location { id: string; name: string; address: string; lat: number; lng: number; country: string; is_verified: number; verified_by_username?: string; cabinet_count?: number; }
 interface Post { id: number; title: string; body: string; username: string; role: string; created_at: string; comment_count: number; }
 interface Comment { id: number; body: string; username: string; role: string; created_at: string; replies: Comment[]; }
-interface Cabinet { id: number; location_id: string; number: number; token_cost: number; status: string; avg_rating: number | null; rating_count: number; }
+interface Cabinet { id: number; location_id: string; number: number; payment_type: string; cost: number; status: string; avg_rating: number | null; rating_count: number; }
 
 function StarRating({ cabinetId, initialRating, ratingCount, myScore, onRated, disabled }: {
   cabinetId: number; initialRating: number | null; ratingCount: number; myScore: number | null;
@@ -64,6 +64,14 @@ function CabinetCard({ cabinet, user, onUpdate }: { cabinet: Cabinet; user: any;
     : cabinet.status === 'broken' ? 'bg-red-500/15 text-red-400 border-red-500/30'
     : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30';
 
+  const paymentLabel = cabinet.payment_type === 'coins' ? '🪙 Coins'
+    : cabinet.payment_type === 'both' ? '🪙+💳 Coins & Card'
+    : '💳 IC Card';
+
+  const paymentColor = cabinet.payment_type === 'coins' ? 'text-yellow-500'
+    : cabinet.payment_type === 'both' ? 'text-blue-400'
+    : 'text-purple-400';
+
   const handleRated = (newAvg: number, newCount: number, newMy: number) => {
     setAvg(newAvg); setCount(newCount); setMyScore(newMy);
     onUpdate(cabinet.id, newAvg, newCount, newMy);
@@ -82,9 +90,8 @@ function CabinetCard({ cabinet, user, onUpdate }: { cabinet: Cabinet; user: any;
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-0.5 text-xs text-zinc-500">
-            <Zap className="w-3 h-3" />{cabinet.token_cost} tokens
-          </span>
+          <span className={`text-xs font-medium ${paymentColor}`}>{paymentLabel}</span>
+          <span className="text-xs text-zinc-600">· {cabinet.cost} credits</span>
           <StarRating
             cabinetId={cabinet.id}
             initialRating={avg}
@@ -271,7 +278,8 @@ export default function LocationPage() {
                     (comments[post.id] || []).map((comment) => (
                       <CommentItem key={comment.id} comment={comment} postId={post.id} locationId={id} user={user} onReport={(cid) => setReportTarget({ type: 'comment', id: cid })} />
                     ))}
-                  {user && !user.is_banned && <CommentForm postId={post.id} locationId={id} onSubmit={() => { const c = { ...comments }; delete c[post.id]; setComments(c); loadComments(post.id); }} />}
+                  {/* Show comment form for EVERYONE — guests just need a name */}
+                  <CommentForm postId={post.id} locationId={id} onSubmit={() => { const c = { ...comments }; delete c[post.id]; setComments(c); loadComments(post.id); }} user={user} />
                 </div>
               )}
             </div>
@@ -297,23 +305,29 @@ export default function LocationPage() {
   );
 }
 
-function CommentItem({ comment, postId, locationId, user, onReport }: { comment: Comment; postId: number; locationId: string; user: any; onReport: (id: number) => void; }) {
+function CommentItem({ comment, postId, locationId, user, onReport }: { comment: Comment & { display_name?: string }; postId: number; locationId: string; user: any; onReport: (id: number) => void; }) {
   const [showReply, setShowReply] = useState(false);
   const badge = getRoleBadge(comment.role);
+  const name = comment.display_name || comment.username || 'Guest';
+  const isGuest = !comment.user_id;
   return (
     <div className="flex gap-2.5">
-      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800 flex-shrink-0 flex items-center justify-center text-xs font-bold text-zinc-300">{comment.username[0].toUpperCase()}</div>
+      <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${isGuest ? 'bg-zinc-700 text-zinc-400' : 'bg-gradient-to-br from-zinc-600 to-zinc-800 text-zinc-300'}`}>
+        {name[0].toUpperCase()}
+      </div>
       <div className="flex-1">
         <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-xs font-medium text-zinc-300">{comment.username}</span>
-          {comment.role !== 'user' && <span className={`text-xs px-1 py-0.5 rounded-full border ${badge.color}`} style={{ fontSize: '9px' }}>{badge.label}</span>}
+          <span className="text-xs font-medium text-zinc-300">{name}</span>
+          {isGuest && <span className="text-xs text-zinc-600 italic">Guest</span>}
+          {!isGuest && comment.role !== 'user' && <span className={`text-xs px-1 py-0.5 rounded-full border ${badge.color}`} style={{ fontSize: '9px' }}>{badge.label}</span>}
           <span className="text-xs text-zinc-700">{formatRelative(comment.created_at)}</span>
           {user && <button onClick={() => onReport(comment.id)} className="ml-auto text-zinc-700 hover:text-red-400"><Flag className="w-3 h-3" /></button>}
         </div>
         <p className="text-xs text-zinc-400 leading-relaxed">{comment.body}</p>
-        {user && !user.is_banned && <button onClick={() => setShowReply(!showReply)} className="text-xs text-zinc-600 hover:text-zinc-400 mt-1">Reply</button>}
-        {showReply && <CommentForm postId={postId} locationId={locationId} parentId={comment.id} onSubmit={() => setShowReply(false)} small />}
-        {comment.replies?.map((r) => (
+        {/* Anyone can reply, even guests */}
+        <button onClick={() => setShowReply(!showReply)} className="text-xs text-zinc-600 hover:text-zinc-400 mt-1">Reply</button>
+        {showReply && <CommentForm postId={postId} locationId={locationId} parentId={comment.id} onSubmit={() => setShowReply(false)} small user={user} />}
+        {comment.replies?.map((r: any) => (
           <div key={r.id} className="mt-2 ml-2 pl-2 border-l border-white/5"><CommentItem comment={r} postId={postId} locationId={locationId} user={user} onReport={onReport} /></div>
         ))}
       </div>
@@ -321,22 +335,33 @@ function CommentItem({ comment, postId, locationId, user, onReport }: { comment:
   );
 }
 
-function CommentForm({ postId, locationId, parentId, onSubmit, small }: { postId: number; locationId: string; parentId?: number; onSubmit: () => void; small?: boolean; }) {
+function CommentForm({ postId, locationId, parentId, onSubmit, small, user }: { postId: number; locationId: string; parentId?: number; onSubmit: () => void; small?: boolean; user?: any; }) {
   const [body, setBody] = useState('');
+  const [guestName, setGuestName] = useState('');
   const [loading, setLoading] = useState(false);
   const submit = async () => {
     if (!body.trim()) return;
     setLoading(true);
-    await fetch(`/api/posts/${postId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, parent_id: parentId, location_id: locationId }) });
+    await fetch(`/api/posts/${postId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body, parent_id: parentId, location_id: locationId, guest_name: guestName || undefined }),
+    });
     setLoading(false); setBody(''); onSubmit();
   };
   return (
-    <div className={`flex gap-2 ${small ? 'mt-1' : 'mt-3'}`}>
-      <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={parentId ? 'Write a reply...' : 'Add a comment...'} rows={small ? 1 : 2}
-        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 resize-none" />
-      <button onClick={submit} disabled={loading || !body.trim()} className="self-end p-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 disabled:opacity-40">
-        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-      </button>
+    <div className={`space-y-1.5 ${small ? 'mt-1' : 'mt-3'}`}>
+      {!user && (
+        <input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Your name (optional)"
+          className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" />
+      )}
+      <div className="flex gap-2">
+        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={parentId ? 'Write a reply...' : 'Add a comment...'} rows={small ? 1 : 2}
+          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 resize-none" />
+        <button onClick={submit} disabled={loading || !body.trim()} className="self-end p-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500 disabled:opacity-40">
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+        </button>
+      </div>
     </div>
   );
 }
