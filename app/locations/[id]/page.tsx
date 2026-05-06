@@ -205,20 +205,25 @@ export default function LocationPage() {
           </div>
         </div>
 
-        {/* Cabinets */}
-        {cabinets.length > 0 && (
-          <div className="glass rounded-2xl p-5 mb-4">
-            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Monitor className="w-4 h-4" /> Cabinets
-              {!user && <span className="text-xs text-zinc-600 font-normal normal-case ml-1">— log in to rate</span>}
-            </h2>
+        {/* Cabinets — always shown */}
+        <div className="glass rounded-2xl p-5 mb-4">
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Monitor className="w-4 h-4" /> Cabinets
+            {cabinets.length > 0 && !user && <span className="text-xs text-zinc-600 font-normal normal-case ml-1">— log in to rate</span>}
+          </h2>
+          {cabinets.length === 0 ? (
+            <div className="flex items-center gap-2.5 py-2 px-3 rounded-xl border border-dashed border-white/10 text-zinc-600">
+              <Monitor className="w-4 h-4 flex-shrink-0" />
+              <p className="text-xs italic">Cabinet info coming soon — check back later!</p>
+            </div>
+          ) : (
             <div className="space-y-2">
               {cabinets.map(cab => (
                 <CabinetCard key={cab.id} cabinet={cab} user={user} onUpdate={handleCabinetUpdate} />
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Community posts */}
         <div className="space-y-4">
