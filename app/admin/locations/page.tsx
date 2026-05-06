@@ -195,6 +195,7 @@ export default function AdminLocationsPage() {
                       {(cabinets[loc.id] || []).map(cab => {
                         const sc = cab.status === 'working' ? 'text-green-400' : cab.status === 'broken' ? 'text-red-400' : 'text-zinc-500';
                         return (
+                          <div key={cab.id}>
                           {editingCab === cab.id ? (
                             /* ── Inline edit mode ── */
                             <div key={cab.id} className="space-y-2 px-2 py-2 rounded-lg bg-violet-500/5 border border-violet-500/20">
@@ -258,6 +259,7 @@ export default function AdminLocationsPage() {
                               )}
                             </div>
                           )}
+                          </div>
                         );
                       })}
                       {/* Add new cabinet */}
