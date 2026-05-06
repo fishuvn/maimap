@@ -10,11 +10,6 @@ export const metadata: Metadata = {
   title: 'MaiMap — Find Maimai DX Near You',
   description: 'Community-driven map for finding maimai DX arcade locations across Australia and Vietnam.',
   keywords: ['maimai', 'maimai DX', 'arcade', 'location finder', 'community'],
-  icons: {
-    icon: '/icon.png',
-    shortcut: '/icon.png',
-    apple: '/icon.png',
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
